@@ -142,19 +142,12 @@ custom_instructions = st.sidebar.text_area(
     help="Additional guidelines to customize the output"
 )
 
-def process_single_video(video_id, api_key, mode_code, count, difficulty, language, custom_instructions):
+def process_single_video(video_id, video_title, video_url, api_key, mode_code, count, difficulty, language, custom_instructions):
     """Processes a single video: extracts transcript, generates MCQs, and saves locally."""
-    # Find matching video dict from session state list
-    video_dict = next((v for v in st.session_state.videos if v['id'] == video_id), None)
-    if not video_dict:
-        return video_id, None, "Video not found in playlist metadata."
-    
-    title = video_dict['title']
-    
     # 1. Fetch transcript
     transcript, error = get_video_transcript(video_id)
     if error:
-        return video_id, title, f"Transcript error: {error}"
+        return video_id, video_title, f"Transcript error: {error}"
         
     # 2. Call Gemini API
     questions, gen_error = generate_mcqs_from_transcript(
@@ -168,20 +161,20 @@ def process_single_video(video_id, api_key, mode_code, count, difficulty, langua
     )
     
     if gen_error:
-        return video_id, title, f"Gemini error: {gen_error}"
+        return video_id, video_title, f"Gemini error: {gen_error}"
         
     # 3. Save draft locally
     draft_file = os.path.join(DRAFTS_DIR, f"{video_id}.json")
     draft_data = {
         "video_id": video_id,
-        "video_title": title,
-        "video_url": video_dict['url'],
+        "video_title": video_title,
+        "video_url": video_url,
         "questions": questions
     }
     with open(draft_file, "w", encoding="utf-8") as f:
         json.dump(draft_data, f, ensure_ascii=False, indent=4)
         
-    return video_id, title, None
+    return video_id, video_title, None
 
 # ----------------- MAIN LAYOUT -----------------
 st.title("📺 YouTube Playlist MCQ Generator")
@@ -296,18 +289,28 @@ with tab2:
             completed_count = 0
             
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                futures = {
-                    executor.submit(
+                futures = {}
+                for video_id in selected_ids:
+                    # Resolve video metadata on the main thread (session state is thread-local)
+                    video_dict = next((v for v in st.session_state.videos if v['id'] == video_id), None)
+                    if not video_dict:
+                        continue
+                    
+                    video_title = video_dict.get('title', 'Unknown Title')
+                    video_url = video_dict.get('url', '')
+                    
+                    futures[executor.submit(
                         process_single_video,
                         video_id,
+                        video_title,
+                        video_url,
                         api_key,
                         mode_code,
                         count,
                         difficulty,
                         language,
                         custom_instructions
-                    ): video_id for video_id in selected_ids
-                }
+                    )] = video_id
                 
                 for future in as_completed(futures):
                     video_id = futures[future]
