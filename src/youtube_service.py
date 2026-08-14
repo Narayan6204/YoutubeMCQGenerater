@@ -41,7 +41,8 @@ def fetch_transcript(video_id: str, languages=('en', 'hi')) -> tuple[str | None,
     
     for attempt in range(max_retries):
         try:
-            transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+            api = YouTubeTranscriptApi()
+            transcript_list = api.list(video_id)
             try:
                 transcript = transcript_list.find_transcript(languages)
             except NoTranscriptFound:
