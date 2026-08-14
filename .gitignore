@@ -1,0 +1,27 @@
+# Virtual environment
+.venv/
+venv/
+ENV/
+
+# Environment variables (contains private Gemini API Keys)
+.env
+
+# Local draft files and cached metadata
+mcq_drafts/
+
+# System / Agent files
+.agents/
+.system_generated/
+
+# Python caching
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# OS files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+desktop.ini
