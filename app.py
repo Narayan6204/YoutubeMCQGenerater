@@ -187,8 +187,13 @@ with tab1:
         st.divider()
         st.subheader("Fetched Videos")
         
-        # Select all helper
-        select_all = st.checkbox("Select / Deselect All", value=True)
+        # Callback to update all checkbox states in session_state when "Select / Deselect All" is clicked
+        def toggle_select_all():
+            for v in st.session_state.videos:
+                st.session_state[f"check_{v['id']}"] = st.session_state.select_all_widget
+
+        # Select all helper checkbox
+        select_all = st.checkbox("Select / Deselect All", value=True, key="select_all_widget", on_change=toggle_select_all)
         
         # Grid display of videos with checkboxes
         selected_ids = []
@@ -197,8 +202,12 @@ with tab1:
             video_id = video['id']
             url = video['url']
             
-            # Checkbox state
-            checked = st.checkbox(f"{idx+1}. {title} ({video_id})", value=select_all, key=f"check_{video_id}")
+            # Ensure the key exists in session_state
+            key = f"check_{video_id}"
+            if key not in st.session_state:
+                st.session_state[key] = select_all
+                
+            checked = st.checkbox(f"{idx+1}. {title} ({video_id})", key=key)
             if checked:
                 selected_ids.append(video_id)
                 
