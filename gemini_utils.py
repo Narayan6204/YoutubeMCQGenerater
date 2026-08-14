@@ -38,8 +38,8 @@ def generate_mcqs_from_transcript(api_key, transcript_text, mode="generate", cou
     try:
         genai.configure(api_key=api_key)
         
-        # We use gemini-1.5-flash because it is fast, highly stable, and has a large context window.
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # We use gemini-2.5-flash because it is the current active stable model
+        model = genai.GenerativeModel('gemini-2.5-flash')
         
         if mode == "generate":
             system_prompt = (
