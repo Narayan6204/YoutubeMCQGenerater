@@ -25,3 +25,6 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 desktop.ini
+
+# Generated PDFs
+*.pdf
