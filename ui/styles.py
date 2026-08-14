@@ -1,16 +1,15 @@
 import streamlit as st
 
 def inject_material_theme():
-    st.html("""
+    st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
     html, body, [class*='css'] {
-        font-family: 'Inter', sans-serif;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     }
 
     #MainMenu {visibility: hidden;}
-    header {visibility: hidden;}
     footer {visibility: hidden;}
 
     .stProgress > div > div > div > div {
@@ -35,4 +34,4 @@ def inject_material_theme():
         transform: translateY(-1px);
     }
     </style>
-    """)
+    """, unsafe_allow_html=True)

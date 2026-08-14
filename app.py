@@ -19,10 +19,9 @@ ensure_drafts_dir()
 inject_material_theme()
 
 if 'videos' not in st.session_state:
-    metadata = load_playlist_metadata()
-    if metadata:
-        st.session_state.playlist_title = metadata.get('title', '')
-        st.session_state.videos = metadata.get('videos', [])
+    videos_list, playlist_title = load_playlist_metadata()
+    st.session_state.playlist_title = playlist_title
+    st.session_state.videos = videos_list
         
 if 'wizard_step' not in st.session_state:
     st.session_state.wizard_step = 0
@@ -31,7 +30,7 @@ if 'selected_video_ids' not in st.session_state:
     st.session_state.selected_video_ids = []
     
 if 'playlist_title' not in st.session_state:
-    st.session_state.playlist_title = st.session_state.get('playlist_title', '')
+    st.session_state.playlist_title = ''
 
 st.sidebar.title('⚙️ Configuration')
 

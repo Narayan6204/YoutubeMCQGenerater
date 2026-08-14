@@ -51,7 +51,10 @@ def fetch_transcript(video_id: str, languages=('en', 'hi')) -> tuple[str | None,
                     transcript = list(transcript_list)[0]
             
             transcript_data = transcript.fetch()
-            text = " ".join([t['text'] for t in transcript_data])
+            text = " ".join([
+                t.text if hasattr(t, 'text') else t.get('text', '')
+                for t in transcript_data
+            ])
             return text, None
             
         except TranscriptsDisabled:
