@@ -83,7 +83,7 @@ st.markdown("""
         margin-bottom: 10px;
     }
 </style>
-""", unsafe_allowed_html=True)
+""", unsafe_allow_html=True)
 
 # Session State Initialization
 if "videos" not in st.session_state:
