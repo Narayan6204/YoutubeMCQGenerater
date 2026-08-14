@@ -23,12 +23,17 @@ class MCQPDF(FPDF):
             self.font_name_hindi = "Helvetica"
             
             if os.path.exists('fonts/NotoSans-Regular.ttf'):
-                self.add_font("NotoSans", "", 'fonts/NotoSans-Regular.ttf', uni=True)
+                self.add_font("NotoSans", "", 'fonts/NotoSans-Regular.ttf')
+                self.add_font("NotoSans", "B", 'fonts/NotoSans-Regular.ttf')
+                self.add_font("NotoSans", "I", 'fonts/NotoSans-Regular.ttf')
                 self.font_name_main = "NotoSans"
             
             if os.path.exists('fonts/NotoSansDevanagari-Regular.ttf'):
-                self.add_font("NotoSansDevanagari", "", 'fonts/NotoSansDevanagari-Regular.ttf', uni=True)
+                self.add_font("NotoSansDevanagari", "", 'fonts/NotoSansDevanagari-Regular.ttf')
+                self.add_font("NotoSansDevanagari", "B", 'fonts/NotoSansDevanagari-Regular.ttf')
+                self.add_font("NotoSansDevanagari", "I", 'fonts/NotoSansDevanagari-Regular.ttf')
                 self.font_name_hindi = "NotoSansDevanagari"
+                self.set_fallback_fonts(["NotoSansDevanagari"])
         except Exception as e:
             logging.warning(f"Failed to load fonts, using Helvetica fallback: {e}")
             self.font_name_main = "Helvetica"
