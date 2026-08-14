@@ -246,7 +246,7 @@ def generate_mcq_pdf(output_path, playlist_title, video_data):
             q_elements = []
             
             # Question text
-            q_text = f"<b>Q{q_global_counter}.</b> {q['question']}"
+            q_text = f"<b>Q{q_global_counter}.</b> {q.get('question', '')}"
             q_elements.append(Paragraph(q_text, q_style))
             
             # Options A, B, C, D
@@ -283,7 +283,7 @@ def generate_mcq_pdf(output_path, playlist_title, video_data):
             ans_elements = []
             
             # Brief question display for context
-            ans_elements.append(Paragraph(f"<b>Q{ans_global_counter}.</b> {q['question']}", q_style))
+            ans_elements.append(Paragraph(f"<b>Q{ans_global_counter}.</b> {q.get('question', '')}", q_style))
             
             # Correct Option
             correct_opt = q.get('correct_option', '').strip()

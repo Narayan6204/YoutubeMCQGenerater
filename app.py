@@ -377,7 +377,7 @@ with tab3:
                     st.markdown(f"### Question {q_idx + 1}")
                     
                     # Editable question text
-                    new_q_text = st.text_area("Question:", value=q['question'], key=f"q_{video_id}_{q_idx}")
+                    new_q_text = st.text_area("Question:", value=q.get('question', ''), key=f"q_{video_id}_{q_idx}")
                     
                     # Editable options
                     options = q.get('options', {})
@@ -390,10 +390,11 @@ with tab3:
                         opt_d = st.text_input("Option D:", value=options.get('D', ''), key=f"opt_d_{video_id}_{q_idx}")
                         
                     # Correct Option select
+                    corr_val = q.get('correct_option', 'A')
                     correct_opt = st.selectbox(
                         "Correct Option:",
                         ["A", "B", "C", "D"],
-                        index=["A", "B", "C", "D"].index(q['correct_option']) if q['correct_option'] in ["A", "B", "C", "D"] else 0,
+                        index=["A", "B", "C", "D"].index(corr_val) if corr_val in ["A", "B", "C", "D"] else 0,
                         key=f"corr_{video_id}_{q_idx}"
                     )
                     
