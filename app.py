@@ -2,6 +2,7 @@ import streamlit as st
 import os
 import json
 import dotenv
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from youtube_utils import extract_playlist_videos, get_video_transcript
 from gemini_utils import generate_mcqs_from_transcript
 from pdf_utils import generate_mcq_pdf
@@ -141,6 +142,47 @@ custom_instructions = st.sidebar.text_area(
     help="Additional guidelines to customize the output"
 )
 
+def process_single_video(video_id, api_key, mode_code, count, difficulty, language, custom_instructions):
+    """Processes a single video: extracts transcript, generates MCQs, and saves locally."""
+    # Find matching video dict from session state list
+    video_dict = next((v for v in st.session_state.videos if v['id'] == video_id), None)
+    if not video_dict:
+        return video_id, None, "Video not found in playlist metadata."
+    
+    title = video_dict['title']
+    
+    # 1. Fetch transcript
+    transcript, error = get_video_transcript(video_id)
+    if error:
+        return video_id, title, f"Transcript error: {error}"
+        
+    # 2. Call Gemini API
+    questions, gen_error = generate_mcqs_from_transcript(
+        api_key=api_key,
+        transcript_text=transcript,
+        mode=mode_code,
+        count=count,
+        difficulty=difficulty,
+        language=language,
+        custom_instructions=custom_instructions
+    )
+    
+    if gen_error:
+        return video_id, title, f"Gemini error: {gen_error}"
+        
+    # 3. Save draft locally
+    draft_file = os.path.join(DRAFTS_DIR, f"{video_id}.json")
+    draft_data = {
+        "video_id": video_id,
+        "video_title": title,
+        "video_url": video_dict['url'],
+        "questions": questions
+    }
+    with open(draft_file, "w", encoding="utf-8") as f:
+        json.dump(draft_data, f, ensure_ascii=False, indent=4)
+        
+    return video_id, title, None
+
 # ----------------- MAIN LAYOUT -----------------
 st.title("📺 YouTube Playlist MCQ Generator")
 st.write("Generate or extract Multiple Choice Questions (MCQs) from YouTube playlist transcripts and download a professionally formatted PDF.")
@@ -246,51 +288,47 @@ with tab2:
             
             mode_code = "generate" if is_generate else "extract"
             
-            for index, video_id in enumerate(selected_ids):
-                # Find matching video dict
-                video_dict = next((v for v in st.session_state.videos if v['id'] == video_id), None)
-                if not video_dict:
-                    continue
-                
-                title = video_dict['title']
-                status_text.write(f"🔄 Processing [{index + 1}/{len(selected_ids)}]: **{title}**")
-                
-                # Fetch transcript
-                transcript, error = get_video_transcript(video_id)
-                if error:
-                    st.error(f"❌ '{title}': {error}")
-                else:
-                    status_text.write(f"🧠 Generating MCQs for: **{title}**...")
-                    # Generate MCQs using Gemini
-                    questions, gen_error = generate_mcqs_from_transcript(
-                        api_key=api_key,
-                        transcript_text=transcript,
-                        mode=mode_code,
-                        count=count,
-                        difficulty=difficulty,
-                        language=language,
-                        custom_instructions=custom_instructions
-                    )
-                    
-                    if gen_error:
-                        st.error(f"❌ '{title}': {gen_error}")
-                    else:
-                        # Save draft locally
-                        draft_file = os.path.join(DRAFTS_DIR, f"{video_id}.json")
-                        draft_data = {
-                            "video_id": video_id,
-                            "video_title": title,
-                            "video_url": video_dict['url'],
-                            "questions": questions
-                        }
-                        with open(draft_file, "w", encoding="utf-8") as f:
-                            json.dump(draft_data, f, ensure_ascii=False, indent=4)
-                        
-                        st.success(f"✅ '{title}': Saved {len(questions)} MCQs locally!")
-                
-                progress_bar.progress((index + 1) / len(selected_ids))
+            status_text.write(f"⏳ Initializing parallel extraction/generation for **{len(selected_ids)}** videos...")
             
-            status_text.write("🎉 **All videos processed successfully!** Go to Tab 3 to review and compile to PDF.")
+            # Setup thread executor to process videos concurrently.
+            # Max 3 workers to prevent rate limiting (free tier is 15 RPM).
+            max_workers = min(len(selected_ids), 3)
+            completed_count = 0
+            
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                futures = {
+                    executor.submit(
+                        process_single_video,
+                        video_id,
+                        api_key,
+                        mode_code,
+                        count,
+                        difficulty,
+                        language,
+                        custom_instructions
+                    ): video_id for video_id in selected_ids
+                }
+                
+                for future in as_completed(futures):
+                    video_id = futures[future]
+                    completed_count += 1
+                    progress_bar.progress(completed_count / len(selected_ids))
+                    
+                    try:
+                        v_id, title, err = future.result()
+                        if err:
+                            st.error(f"❌ '{title or v_id}': {err}")
+                        else:
+                            # Read saved count
+                            draft_file = os.path.join(DRAFTS_DIR, f"{v_id}.json")
+                            with open(draft_file, "r", encoding="utf-8") as f:
+                                saved_data = json.load(f)
+                            num_q = len(saved_data.get("questions", []))
+                            st.success(f"✅ '{title}': Successfully extracted and saved {num_q} MCQs locally!")
+                    except Exception as e:
+                        st.error(f"❌ Unexpected error processing video {video_id}: {e}")
+            
+            status_text.write("🎉 **All videos processed!** Go to Tab 3 to review and compile to PDF.")
 
 # ================= TAB 3: REVIEW & EXPORT =================
 with tab3:
