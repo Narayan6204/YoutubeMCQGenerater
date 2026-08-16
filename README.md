@@ -1,1 +1,1 @@
-this work is in pending due to consumption of high Resources.
+this work is in pending due high Resources consumption.
